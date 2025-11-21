@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Stage, Layer, Line } from 'react-konva';
-import { useWhiteboardStore } from '@/store/whiteboardStore';
+import { Stage, Layer, Line, Rect, Ellipse, Arrow } from 'react-konva';
+import { useWhiteboardStore, type Stroke } from '@/store/whiteboardStore';
 import { KonvaEventObject } from 'konva/lib/Node';
 
 export default function WhiteboardCanvas() {
@@ -112,6 +112,81 @@ export default function WhiteboardCanvas() {
     // Convert activeStrokes Map to array for rendering
     const activeStrokesArray = Array.from(activeStrokes.values());
 
+    // Helper function to render a stroke (line or shape)
+    const renderStroke = (stroke: Stroke) => {
+        const compositeOp = (stroke.tool === 'eraser' ? 'destination-out' : 'source-over') as globalThis.GlobalCompositeOperation;
+
+        const commonProps = {
+            key: stroke.id,
+            stroke: stroke.color,
+            strokeWidth: stroke.width,
+            opacity: stroke.opacity,
+            globalCompositeOperation: compositeOp,
+        };
+
+        if (!stroke.shapeType || stroke.points.length < 2) {
+            // Regular line/pen stroke
+            return (
+                <Line
+                    {...commonProps}
+                    points={stroke.points.flatMap((p) => [p.x, p.y])}
+                    tension={0.5}
+                    lineCap="round"
+                    lineJoin="round"
+                />
+            );
+        }
+
+        // Shape rendering
+        const start = stroke.points[0];
+        const end = stroke.points[stroke.points.length - 1];
+        const width = end.x - start.x;
+        const height = end.y - start.y;
+
+        switch (stroke.shapeType) {
+            case 'rectangle':
+                return (
+                    <Rect
+                        {...commonProps}
+                        x={Math.min(start.x, end.x)}
+                        y={Math.min(start.y, end.y)}
+                        width={Math.abs(width)}
+                        height={Math.abs(height)}
+                    />
+                );
+            case 'circle':
+                return (
+                    <Ellipse
+                        {...commonProps}
+                        x={start.x + width / 2}
+                        y={start.y + height / 2}
+                        radiusX={Math.abs(width) / 2}
+                        radiusY={Math.abs(height) / 2}
+                    />
+                );
+            case 'line':
+                return (
+                    <Line
+                        {...commonProps}
+                        points={[start.x, start.y, end.x, end.y]}
+                        lineCap="round"
+                    />
+                );
+            case 'arrow':
+                return (
+                    <Arrow
+                        {...commonProps}
+                        points={[start.x, start.y, end.x, end.y]}
+                        pointerLength={15}
+                        pointerWidth={15}
+                        fill={stroke.color}
+                    />
+                );
+            default:
+                return null;
+        }
+    };
+
     return (
         <div ref={containerRef} className="w-full h-full bg-white touch-none">
             <Stage
@@ -125,36 +200,8 @@ export default function WhiteboardCanvas() {
                 onTouchEnd={handleTouchEnd}
             >
                 <Layer>
-                    {strokes.map((stroke) => (
-                        <Line
-                            key={stroke.id}
-                            points={stroke.points.flatMap((p) => [p.x, p.y])}
-                            stroke={stroke.color}
-                            strokeWidth={stroke.width}
-                            tension={0.5}
-                            lineCap="round"
-                            lineJoin="round"
-                            opacity={stroke.opacity}
-                            globalCompositeOperation={
-                                stroke.tool === 'eraser' ? 'destination-out' : 'source-over'
-                            }
-                        />
-                    ))}
-                    {activeStrokesArray.map((stroke) => (
-                        <Line
-                            key={stroke.id}
-                            points={stroke.points.flatMap((p) => [p.x, p.y])}
-                            stroke={stroke.color}
-                            strokeWidth={stroke.width}
-                            tension={0.5}
-                            lineCap="round"
-                            lineJoin="round"
-                            opacity={stroke.opacity}
-                            globalCompositeOperation={
-                                stroke.tool === 'eraser' ? 'destination-out' : 'source-over'
-                            }
-                        />
-                    ))}
+                    {strokes.map(renderStroke)}
+                    {activeStrokesArray.map(renderStroke)}
                 </Layer>
             </Stage>
         </div>

@@ -9,7 +9,11 @@ import {
     Eraser,
     Undo2,
     Redo2,
-    Trash2
+    Trash2,
+    Square,
+    Circle,
+    Minus,
+    MoveUpRight
 } from 'lucide-react';
 
 const COLORS = [
@@ -79,6 +83,47 @@ export default function Toolbar() {
                     title="Eraser"
                 >
                     <Eraser size={20} />
+                </button>
+                <div className="w-px h-6 bg-gray-200 mx-1" />
+                <button
+                    onClick={() => setTool('rectangle')}
+                    className={`p-2 rounded-xl transition-colors ${currentTool === 'rectangle'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'hover:bg-gray-100 text-gray-600'
+                        }`}
+                    title="Rectangle"
+                >
+                    <Square size={20} />
+                </button>
+                <button
+                    onClick={() => setTool('circle')}
+                    className={`p-2 rounded-xl transition-colors ${currentTool === 'circle'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'hover:bg-gray-100 text-gray-600'
+                        }`}
+                    title="Circle"
+                >
+                    <Circle size={20} />
+                </button>
+                <button
+                    onClick={() => setTool('line')}
+                    className={`p-2 rounded-xl transition-colors ${currentTool === 'line'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'hover:bg-gray-100 text-gray-600'
+                        }`}
+                    title="Line"
+                >
+                    <Minus size={20} />
+                </button>
+                <button
+                    onClick={() => setTool('arrow')}
+                    className={`p-2 rounded-xl transition-colors ${currentTool === 'arrow'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'hover:bg-gray-100 text-gray-600'
+                        }`}
+                    title="Arrow"
+                >
+                    <MoveUpRight size={20} />
                 </button>
             </div>
 

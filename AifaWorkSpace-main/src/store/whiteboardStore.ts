@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { temporal, type TemporalState } from 'zundo'
 
-export type ToolType = "pen" | "highlighter" | "eraser" | "shape";
+export type ToolType = "pen" | "highlighter" | "eraser" | "rectangle" | "circle" | "line" | "arrow";
+export type ShapeType = "rectangle" | "circle" | "line" | "arrow";
 
 export interface Point {
     x: number;
@@ -17,6 +18,7 @@ export interface Stroke {
     opacity: number;
     pageId: string;
     createdAt: string;
+    shapeType?: ShapeType; // For shape tools
 }
 
 interface WhiteboardState {
@@ -60,6 +62,9 @@ export const useWhiteboardStore = create<WhiteboardState>()(
         startStroke: (point, touchId = 'mouse') => {
             const { currentTool, currentColor, currentWidth, currentOpacity, activeStrokes } = get();
             const id = crypto.randomUUID();
+
+            const isShapeTool = ['rectangle', 'circle', 'line', 'arrow'].includes(currentTool);
+
             const newStroke: Stroke = {
                 id,
                 tool: currentTool,
@@ -69,6 +74,7 @@ export const useWhiteboardStore = create<WhiteboardState>()(
                 opacity: currentOpacity,
                 pageId: 'default',
                 createdAt: new Date().toISOString(),
+                ...(isShapeTool && { shapeType: currentTool as ShapeType }),
             };
 
             const newActiveStrokes = new Map(activeStrokes);
