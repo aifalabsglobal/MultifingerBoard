@@ -5,6 +5,7 @@ import { Stage, Layer, Line, Rect, Ellipse, Arrow, Text } from 'react-konva';
 import { useWhiteboardStore, type Stroke, type Point } from '@/store/whiteboardStore';
 import { KonvaEventObject } from 'konva/lib/Node';
 import type { Stage as KonvaStage } from 'konva/lib/Stage';
+import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 type ExportFormat = 'png' | 'pdf' | 'svg';
 
@@ -19,7 +20,11 @@ declare global {
     }
 }
 
-export default function WhiteboardCanvas() {
+interface WhiteboardCanvasProps {
+    boardId?: string;
+}
+
+export default function WhiteboardCanvas({ boardId }: WhiteboardCanvasProps) {
     const {
         strokes,
         activeStrokes,
@@ -31,9 +36,63 @@ export default function WhiteboardCanvas() {
         setStageRef,
         selectedStrokeId,
         selectStroke,
+        replaceStrokes,
     } = useWhiteboardStore();
 
     const stageRef = useRef<KonvaStage | null>(null);
+    const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | null>(null);
+    const lastSavedStrokes = useRef<string>('[]');
+
+    // Load board data
+    useEffect(() => {
+        if (!boardId) return;
+
+        const loadBoard = async () => {
+            try {
+                const res = await fetch(`/api/boards/${boardId}`);
+                if (!res.ok) throw new Error('Failed to load board');
+                const data = await res.json();
+                if (Array.isArray(data.content)) {
+                    replaceStrokes(data.content);
+                    lastSavedStrokes.current = JSON.stringify(data.content);
+                }
+            } catch (error) {
+                console.error('Error loading board:', error);
+            }
+        };
+
+        loadBoard();
+    }, [boardId, replaceStrokes]);
+
+    // Auto-save logic
+    useEffect(() => {
+        if (!boardId) return;
+
+        const currentStrokesStr = JSON.stringify(strokes);
+        if (currentStrokesStr === lastSavedStrokes.current) return;
+
+        setSaveStatus('saving');
+        const timeoutId = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/boards/${boardId}/save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: strokes }),
+                });
+
+                if (!res.ok) throw new Error('Failed to save');
+
+                lastSavedStrokes.current = currentStrokesStr;
+                setSaveStatus('saved');
+                setTimeout(() => setSaveStatus(null), 2000);
+            } catch (error) {
+                console.error('Error saving board:', error);
+                setSaveStatus('error');
+            }
+        }, 2000); // Debounce save by 2 seconds
+
+        return () => clearTimeout(timeoutId);
+    }, [strokes, boardId]);
 
     // Export canvas as PNG, PDF, or SVG
     const exportCanvas = useCallback((format: ExportFormat) => {
@@ -587,6 +646,31 @@ export default function WhiteboardCanvas() {
                     {activeStrokesArray.map(renderStroke)}
                 </Layer>
             </Stage>
+
+            {/* Save Status Indicator */}
+            {saveStatus && (
+                <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 bg-white/90 rounded-full shadow-sm text-xs font-medium transition-all">
+                    {saveStatus === 'saving' && (
+                        <>
+                            <Loader2 size={14} className="animate-spin text-blue-500" />
+                            <span className="text-gray-600">Saving...</span>
+                        </>
+                    )}
+                    {saveStatus === 'saved' && (
+                        <>
+                            <CheckCircle2 size={14} className="text-green-500" />
+                            <span className="text-gray-600">Saved</span>
+                        </>
+                    )}
+                    {saveStatus === 'error' && (
+                        <>
+                            <AlertCircle size={14} className="text-red-500" />
+                            <span className="text-red-600">Save failed</span>
+                        </>
+                    )}
+                </div>
+            )}
+
             <div className="absolute bottom-6 right-6 flex flex-col items-center gap-2 z-50">
                 <div className="bg-white/90 text-xs font-semibold text-gray-700 px-3 py-1 rounded-full shadow">
                     {zoomPercentage}%

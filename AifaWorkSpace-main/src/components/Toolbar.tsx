@@ -180,7 +180,7 @@ export default function Toolbar() {
                         return (
                             <button
                                 key={tool.id}
-                                onClick={() => tool.value && setTool(tool.value)}
+                                onClick={() => tool.value && setTool(tool.value as any)}
                                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${currentTool === tool.value
                                     ? 'bg-blue-50 text-blue-600 font-medium'
                                     : 'text-gray-700 hover:bg-gray-50'
@@ -204,7 +204,7 @@ export default function Toolbar() {
                         return (
                             <button
                                 key={tool.id}
-                                onClick={() => tool.value && setTool(tool.value)}
+                                onClick={() => tool.value && setTool(tool.value as any)}
                                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${currentTool === tool.value
                                     ? 'bg-blue-50 text-blue-600 font-medium'
                                     : 'text-gray-700 hover:bg-gray-50'

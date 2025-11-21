@@ -3,7 +3,6 @@ import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './prisma';
-import type { WorkspaceRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const defaultWorkspaceName = (email?: string | null) => {
@@ -17,8 +16,9 @@ export const {
     signIn,
     signOut,
     auth,
-} = NextAuth({
+} = (NextAuth as any)({
     adapter: PrismaAdapter(prisma),
+    secret: process.env.AUTH_SECRET,
     session: {
         strategy: 'jwt', // Changed to JWT for credentials provider compatibility
     },
@@ -69,19 +69,28 @@ export const {
         signIn: '/login',
     },
     callbacks: {
-        async session({ session, user }) {
-            if (session.user && user) {
-                (session.user as typeof session.user & { id: string }).id = user.id;
-                session.user.image = user.image;
-                session.user.name = user.name;
-                session.user.email = user.email;
+        async jwt({ token, user }) {
+            if (user) {
+                token.id = user.id;
+                token.picture = user.image;
+                token.name = user.name;
+                token.email = user.email;
+            }
+            return token;
+        },
+        async session({ session, token }: { session: any; token: any }) {
+            if (session.user && token) {
+                session.user.id = token.id || token.sub; // Fallback to sub
+                session.user.image = token.picture;
+                session.user.name = token.name;
+                session.user.email = token.email;
             }
             return session;
         },
     },
     events: {
-        async createUser({ user }) {
-            const workspace = await prisma.workspace.create({
+        async createUser({ user }: { user: any }) {
+            const workspace = await (prisma as any).workspace.create({
                 data: {
                     name: defaultWorkspaceName(user.email),
                     slug: `workspace-${user.id.slice(0, 8)}`,
@@ -89,13 +98,13 @@ export const {
                     members: {
                         create: {
                             userId: user.id,
-                            role: 'OWNER' as WorkspaceRole,
+                            role: 'OWNER',
                         },
                     },
                 },
             });
 
-            await prisma.board.create({
+            await (prisma as any).board.create({
                 data: {
                     title: 'Welcome Board',
                     userId: user.id,
