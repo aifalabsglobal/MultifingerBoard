@@ -1,6 +1,8 @@
-# MultiFinger Board 🎨✋
-
-A modern, multitouch-enabled whiteboard application built with Next.js 16, featuring real-time drawing capabilities with support for multiple simultaneous touch inputs.
+<div align="center">
+  <img src="public/logo.png" alt="AIFA Logo" width="200"/>
+  <h1>MultiFinger Board 🎨✋</h1>
+  <p>A modern, multitouch-enabled whiteboard application built with Next.js 16, featuring real-time drawing capabilities with support for multiple simultaneous touch inputs.</p>
+</div>
 
 ![Next.js](https://img.shields.io/badge/Next.js-16.0.3-black)
 ![React](https://img.shields.io/badge/React-19.2.0-blue)
