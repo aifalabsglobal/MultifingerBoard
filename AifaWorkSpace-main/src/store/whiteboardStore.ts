@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { temporal, type TemporalState } from 'zundo'
+import { temporal } from 'zundo'
 
 export type ToolType = "pen" | "highlighter" | "eraser" | "rectangle" | "circle" | "line" | "arrow";
 export type ShapeType = "rectangle" | "circle" | "line" | "arrow";
@@ -91,10 +91,20 @@ export const useWhiteboardStore = create<WhiteboardState>()(
             if (!activeStroke) return;
 
             const newActiveStrokes = new Map(activeStrokes);
-            newActiveStrokes.set(touchId, {
-                ...activeStroke,
-                points: [...activeStroke.points, point],
-            });
+
+            // For shape tools, only keep start and end points
+            if (activeStroke.shapeType) {
+                newActiveStrokes.set(touchId, {
+                    ...activeStroke,
+                    points: [activeStroke.points[0], point], // Keep start, update end
+                });
+            } else {
+                // For pen/highlighter/eraser, add all points
+                newActiveStrokes.set(touchId, {
+                    ...activeStroke,
+                    points: [...activeStroke.points, point],
+                });
+            }
 
             set({
                 activeStrokes: newActiveStrokes,

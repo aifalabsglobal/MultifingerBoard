@@ -3,7 +3,6 @@
 import dynamic from 'next/dynamic';
 import Header from '@/components/Header';
 import Toolbar from '@/components/Toolbar';
-import { useWhiteboardStore } from '@/store/whiteboardStore';
 
 // Dynamically import the canvas to avoid SSR issues with Konva
 const WhiteboardCanvas = dynamic(
