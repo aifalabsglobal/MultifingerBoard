@@ -11,6 +11,7 @@ export default function Header() {
                     alt="AIM Logo"
                     width={100}
                     height={50}
+                    style={{ height: 'auto' }}
                     className="object-contain"
                     priority
                 />
