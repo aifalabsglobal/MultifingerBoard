@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { temporal } from 'zundo'
+import type { Stage } from 'konva/lib/Stage'
 
-export type ToolType = "pen" | "highlighter" | "eraser" | "rectangle" | "circle" | "line" | "arrow";
+export type ToolType = "select" | "pen" | "highlighter" | "eraser" | "rectangle" | "circle" | "line" | "arrow" | "text";
 export type ShapeType = "rectangle" | "circle" | "line" | "arrow";
 
 export interface Point {
@@ -19,6 +20,7 @@ export interface Stroke {
     pageId: string;
     createdAt: string;
     shapeType?: ShapeType; // For shape tools
+    text?: string; // For text tool
 }
 
 interface WhiteboardState {
@@ -28,12 +30,17 @@ interface WhiteboardState {
     currentOpacity: number;
     strokes: Stroke[];
     activeStrokes: Map<string, Stroke>; // Map of touchId -> active stroke
+    stageRef: Stage | null; // Konva Stage reference for export
+    selectedStrokeId: string | null;
 
     setTool: (tool: ToolType) => void;
     setColor: (color: string) => void;
     setWidth: (width: number) => void;
     setOpacity: (opacity: number) => void;
-
+    setStageRef: (ref: Stage | null) => void;
+    addText: (text: string, point: Point) => void;
+    replaceStrokes: (strokes: Stroke[]) => void;
+    selectStroke: (strokeId: string | null) => void;
     startStroke: (point: Point, touchId?: string) => void;
     addPointToStroke: (point: Point, touchId?: string) => void;
     endStroke: (touchId?: string) => void;
@@ -48,6 +55,8 @@ export const useWhiteboardStore = create<WhiteboardState>()(
         currentOpacity: 1,
         strokes: [],
         activeStrokes: new Map(),
+        stageRef: null,
+        selectedStrokeId: null,
 
         setTool: (tool) => {
             set({
@@ -57,7 +66,30 @@ export const useWhiteboardStore = create<WhiteboardState>()(
         },
         setColor: (color) => set({ currentColor: color }),
         setWidth: (width) => set({ currentWidth: width }),
+        addText: (text: string, point: Point) => {
+            const { strokes } = get();
+            const id = crypto.randomUUID();
+            const newStroke: Stroke = {
+                id,
+                tool: 'text',
+                points: [point],
+                color: get().currentColor,
+                width: get().currentWidth,
+                opacity: get().currentOpacity,
+                pageId: 'default',
+                createdAt: new Date().toISOString(),
+                text,
+            };
+            set({ strokes: [...strokes, newStroke] });
+        },
         setOpacity: (opacity) => set({ currentOpacity: opacity }),
+        setStageRef: (ref) => set({ stageRef: ref }),
+        replaceStrokes: (strokes) => set({
+            strokes,
+            activeStrokes: new Map(),
+            selectedStrokeId: null,
+        }),
+        selectStroke: (strokeId) => set({ selectedStrokeId: strokeId }),
 
         startStroke: (point, touchId = 'mouse') => {
             const { currentTool, currentColor, currentWidth, currentOpacity, activeStrokes } = get();
@@ -82,6 +114,7 @@ export const useWhiteboardStore = create<WhiteboardState>()(
 
             set({
                 activeStrokes: newActiveStrokes,
+                selectedStrokeId: null,
             });
         },
 
@@ -127,7 +160,7 @@ export const useWhiteboardStore = create<WhiteboardState>()(
         },
 
         clearPage: () => {
-            set({ strokes: [], activeStrokes: new Map() });
+            set({ strokes: [], activeStrokes: new Map(), selectedStrokeId: null });
         },
     }), {
         partialize: (state) => ({
